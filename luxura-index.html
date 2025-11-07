@@ -4,7 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Luxura • Gestion d’inventaire</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root{
@@ -16,300 +17,141 @@
     .wrap{max-width:1100px;margin:0 auto;padding:24px}
     .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
     .brand{display:flex;gap:12px;align-items:center}
-    .logo{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-2));
-      display:flex;align-items:center;justify-content:center;color:#111;font-weight:800;box-shadow:0 0 0 1px #2a2a2a}
+    .logo{
+      width:48px;
+      height:48px;
+      border-radius:10px;
+      background:linear-gradient(135deg,var(--gold),var(--gold-2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      box-shadow:0 0 0 1px #2a2a2a;
+    }
+    .logo img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      object-position:center;
+    }
     .title{font-weight:800;letter-spacing:.2px;font-size:18px}
     .muted{color:var(--muted);font-size:12px}
     .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
     .grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
     @media (max-width: 900px){.grid{grid-template-columns:1fr}}
     label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-    input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;background:#0d0d0d;color:var(--fg)}
-    input::placeholder,textarea::placeholder{color:#80807a}
+    input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;background:#0d0d0d;color:var(--fg)}
     button{padding:10px 14px;border:1px solid var(--gold-2);border-radius:12px;background:var(--gold);color:#111;cursor:pointer;font-weight:700}
     .btn-ghost{background:transparent;color:var(--fg);border-color:var(--line)}
-    .btn-danger{background:transparent;color:var(--danger);border-color:#3a2a2a}
     .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     table{width:100%;border-collapse:collapse;font-size:14px}
     th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left}
     h3{margin:0 0 10px;font-size:16px}
     .ok{color:var(--ok)} .err{color:var(--danger)}
-    .kbd{font-family:ui-monospace,Menlo,monospace;background:#0e0e0e;border:1px solid var(--line);padding:2px 6px;border-radius:6px}
-    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);font-size:11px;color:var(--muted)}
-    .gold{color:var(--gold)}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
-        <div class="logo" id="logoSlot">L</div>
+        <div class="logo"><img id="logoImg" src="https://static.wixstatic.com/media/de6cdb_1818e78bd1294722811849c73ea77774~mv2.png" alt="Luxura Logo"></div>
         <div>
           <div class="title">Luxura — Inventaire multi-salons</div>
-          <div class="muted">UI Noir & Or — prête pour Wix</div>
+          <div class="muted">Interface noire & or • connectée à l’API Render</div>
         </div>
       </div>
-      <div class="muted">v0.2</div>
+      <div class="muted">v1.0</div>
     </div>
 
-    <!-- CONFIG -->
     <div class="card" style="margin-bottom:16px;">
       <div class="grid">
         <div>
           <label>URL de l’API</label>
           <input id="apiUrl" value="https://luxura-inventory-api.onrender.com" oninput="saveCfg()" />
-          <div class="muted">Ex : <span class="kbd">https://luxura-inventory-api.onrender.com</span></div>
         </div>
         <div>
-          <label>Clé API (x-api-key)</label>
-          <input id="apiKey" placeholder="(laisser vide si non activée)" oninput="saveCfg()" />
-          <div class="muted">Si activée côté serveur</div>
+          <label>Clé API (si utilisée)</label>
+          <input id="apiKey" placeholder="(laisser vide)" oninput="saveCfg()" />
         </div>
       </div>
-      <div class="grid" style="margin-top:10px;">
-        <div>
-          <label>URL du logo (PNG/SVG)</label>
-          <input id="logoUrl" placeholder="https://.../logo.png" oninput="saveLogo()" />
-          <div class="muted">L’icône “L” devient ton logo.</div>
-        </div>
-        <div>
-          <label>Actions</label>
-          <div class="toolbar">
-            <button onclick="testApi()">Tester la connexion</button>
-            <button class="btn-ghost" onclick="refreshAll()">Rafraîchir données</button>
-            <span id="testStatus" class="muted"></span>
-          </div>
-        </div>
+      <div class="toolbar" style="margin-top:10px;">
+        <button onclick="testApi()">Tester la connexion</button>
+        <button class="btn-ghost" onclick="refreshAll()">Rafraîchir données</button>
+        <span id="testStatus" class="muted"></span>
       </div>
     </div>
 
     <div class="grid">
-      <!-- SALONS -->
       <div class="card">
-        <h3>Salons <span class="pill">/salons</span></h3>
+        <h3>Salons</h3>
         <form class="toolbar" onsubmit="createSalon(event)">
-          <input id="salonName" placeholder="Nom du salon (ex. Salon Carouso)">
-          <input id="salonAddr" placeholder="Adresse (optionnel)">
+          <input id="salonName" placeholder="Nom du salon">
+          <input id="salonAddr" placeholder="Adresse">
           <button>Ajouter</button>
         </form>
         <div id="salonsList" class="muted">Aucun salon…</div>
       </div>
-
-      <!-- PRODUITS -->
       <div class="card">
-        <h3>Produits <span class="pill">/products</span></h3>
+        <h3>Produits</h3>
         <form class="toolbar" onsubmit="createProduct(event)">
-          <input id="prodSku" placeholder="SKU (ex. GENIUS-ITIP-18-BLOND)">
-          <input id="prodName" placeholder="Nom (ex. Genius i-Tips 18&quot;)">
+          <input id="prodSku" placeholder="SKU">
+          <input id="prodName" placeholder="Nom du produit">
           <input id="prodLen" placeholder="Longueur (ex. 18)">
-          <input id="prodColor" placeholder="Couleur (ex. Blond)">
-          <input id="prodPrice" placeholder="Prix (ex. 149.00)">
+          <input id="prodColor" placeholder="Couleur">
+          <input id="prodPrice" placeholder="Prix">
           <button>Ajouter</button>
         </form>
-        <div class="toolbar" style="margin:10px 0;">
-          <button class="btn-ghost" onclick="preset('Genius i-Tips 18\\\"','GENIUS-ITIP-18-BLOND','18','Blond','149.00')">Preset i-Tips</button>
-          <button class="btn-ghost" onclick="preset('Bande adhésive 20\\\"','TAPE-20-CHATAIN','20','Châtain','129.00')">Preset Bande</button>
-          <button class="btn-ghost" onclick="preset('Halo 18\\\"','HALO-18-BLOND','18','Blond','169.00')">Preset Halo</button>
-        </div>
         <div id="productsList" class="muted">Aucun produit…</div>
       </div>
     </div>
 
-    <!-- INVENTAIRE -->
     <div class="card" style="margin-top:16px;">
+      <h3>Inventaire</h3>
       <div class="toolbar">
-        <h3 style="margin-right:auto;">Inventaire <span class="pill">/inventory</span></h3>
         <select id="filterSalon" onchange="loadInventory()"></select>
         <select id="filterProduct" onchange="loadInventory()"></select>
-        <button class="btn-ghost" onclick="loadInventory()">Actualiser</button>
       </div>
       <div id="inventoryTable" class="muted">Aucune donnée…</div>
     </div>
 
-    <div class="grid" style="margin-top:16px;">
-      <!-- MOUVEMENTS -->
-      <div class="card">
-        <h3>Mouvement <span class="pill">/movement (query)</span></h3>
-        <div class="grid">
-          <div>
-            <label>Type</label>
-            <select id="movType">
-              <option>IN</option><option>OUT</option><option>SALE</option><option>ADJUST</option>
-            </select>
-          </div>
-          <div><label>Salon</label><select id="movSalon"></select></div>
-          <div><label>Produit</label><select id="movProduct"></select></div>
-          <div><label>Quantité (entier)</label><input id="movQty" placeholder="ex. 5"></div>
-          <div style="grid-column:1/-1;"><label>Note</label><input id="movNote" placeholder="(optionnel)"></div>
-        </div>
-        <div class="toolbar" style="margin-top:10px;">
-          <button onclick="submitMovement()">Enregistrer</button>
-          <span id="movStatus" class="muted"></span>
-        </div>
-        <div class="muted" style="margin-top:6px;">Astuce : <span class="kbd">qty</span>, <span class="kbd">salon_id</span>, <span class="kbd">product_id</span> doivent être des <b>entiers</b> (sans guillemets).</div>
+    <div class="card" style="margin-top:16px;">
+      <h3>Mouvement</h3>
+      <div class="grid">
+        <div><label>Type</label><select id="movType"><option>IN</option><option>SALE</option><option>ADJUST</option></select></div>
+        <div><label>Salon</label><select id="movSalon"></select></div>
+        <div><label>Produit</label><select id="movProduct"></select></div>
+        <div><label>Quantité</label><input id="movQty" placeholder="ex. 5"></div>
       </div>
-
-      <!-- AIDE -->
-      <div class="card">
-        <h3>Conseils rapides</h3>
-        <ul class="muted" style="margin:8px 0 0 16px; line-height:1.6;">
-          <li><span class="gold">Pour ajouter du stock</span> : Type <b>IN</b>, quantité positive.</li>
-          <li><span class="gold">Pour une vente</span> : Type <b>SALE</b>, quantité positive (le système décrémente).</li>
-          <li><span class="gold">Pour corriger un écart</span> : Type <b>ADJUST</b> (ex. qty = -1).</li>
-          <li>Filtre en haut de l’inventaire pour voir un salon/produit précis.</li>
-          <li>API : <span class="kbd">/salons</span>, <span class="kbd">/products</span>, <span class="kbd">/inventory</span>, <span class="kbd">/movement</span>.</li>
-        </ul>
+      <div class="toolbar" style="margin-top:10px;">
+        <button onclick="submitMovement()">Enregistrer</button>
+        <span id="movStatus" class="muted"></span>
       </div>
     </div>
-
-    <div class="muted" style="margin-top:18px;">© Luxura Distribution — outil interne</div>
   </div>
 
 <script>
-  // ------------ CONFIG ------------
-  function cfg(){
-    return {
-      apiUrl: localStorage.getItem('apiUrl') || document.getElementById('apiUrl').value,
-      apiKey: localStorage.getItem('apiKey') || document.getElementById('apiKey').value
-    }
-  }
-  function saveCfg(){
-    localStorage.setItem('apiUrl', document.getElementById('apiUrl').value.trim());
-    localStorage.setItem('apiKey', document.getElementById('apiKey').value.trim());
-  }
-  function saveLogo(){
-    const val = document.getElementById('logoUrl').value.trim();
-    localStorage.setItem('logoUrl', val);
-    const slot = document.getElementById('logoSlot');
-    if(val){ slot.style.backgroundImage=`url(${val})`; slot.style.backgroundSize='cover'; slot.textContent=''; }
-    else { slot.style.backgroundImage='none'; slot.textContent='L'; }
-  }
-  function headers(){
-    const h={'Content-Type':'application/json'};
-    const k = cfg().apiKey; if(k) h['x-api-key']=k;
-    return h;
-  }
-  function setStatus(id,msg,ok=true){ const el=document.getElementById(id); el.textContent=msg; el.className = (ok?'ok':'err')+' muted'; }
+function cfg(){return{apiUrl:localStorage.getItem('apiUrl')||document.getElementById('apiUrl').value,apiKey:localStorage.getItem('apiKey')||document.getElementById('apiKey').value}}
+function saveCfg(){localStorage.setItem('apiUrl',document.getElementById('apiUrl').value.trim());localStorage.setItem('apiKey',document.getElementById('apiKey').value.trim());}
+function headers(){const h={'Content-Type':'application/json'};const k=cfg().apiKey;if(k)h['x-api-key']=k;return h;}
+function setStatus(id,msg,ok=true){const el=document.getElementById(id);el.textContent=msg;el.className=(ok?'ok':'err')+' muted';}
 
-  async function testApi(){
-    try{
-      const r = await fetch(cfg().apiUrl + '/salons', { headers: headers() });
-      if(r.ok) setStatus('testStatus','Connexion OK');
-      else setStatus('testStatus','Erreur '+r.status,false);
-    }catch(e){ setStatus('testStatus','Impossible de joindre l’API',false); }
-    refreshAll();
-  }
+async function testApi(){try{const r=await fetch(cfg().apiUrl+'/salons',{headers:headers()});if(r.ok)setStatus('testStatus','Connexion OK');else setStatus('testStatus','Erreur '+r.status,false);}catch(e){setStatus('testStatus','Impossible de joindre l’API',false);}refreshAll();}
 
-  // ------------ CRUD SALONS ------------
-  async function createSalon(e){ e.preventDefault();
-    const name=document.getElementById('salonName').value.trim(); if(!name) return;
-    const address=document.getElementById('salonAddr').value.trim();
-    const r=await fetch(cfg().apiUrl+'/salons',{method:'POST',headers:headers(),body:JSON.stringify({name,address})});
-    if(r.ok){ document.getElementById('salonName').value=''; document.getElementById('salonAddr').value=''; loadSalons(); } else { alert('Erreur ajout salon'); }
-  }
-  async function loadSalons(){
-    const r=await fetch(cfg().apiUrl+'/salons',{headers:headers()}); const rows=r.ok?await r.json():[];
-    const opts = rows.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-    for(const id of ['filterSalon','movSalon']) document.getElementById(id).innerHTML = `<option value="">— Salon —</option>`+opts;
-    document.getElementById('salonsList').innerHTML = rows.length
-      ? `<table><tr><th>ID</th><th>Nom</th><th>Adresse</th></tr>${rows.map(s=>`<tr><td>${s.id}</td><td>${s.name}</td><td>${s.address||''}</td></tr>`).join('')}</table>`
-      : '<div class="muted">Aucun salon…</div>';
-  }
+async function createSalon(e){e.preventDefault();const n=document.getElementById('salonName').value.trim();if(!n)return;const a=document.getElementById('salonAddr').value.trim();const r=await fetch(cfg().apiUrl+'/salons',{method:'POST',headers:headers(),body:JSON.stringify({name:n,address:a})});if(r.ok){loadSalons();}else alert('Erreur ajout salon');}
+async function loadSalons(){const r=await fetch(cfg().apiUrl+'/salons',{headers:headers()});const rows=r.ok?await r.json():[];const opts=rows.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');for(const id of ['filterSalon','movSalon'])document.getElementById(id).innerHTML=`<option value="">— Salon —</option>`+opts;document.getElementById('salonsList').innerHTML=rows.length?`<table><tr><th>ID</th><th>Nom</th><th>Adresse</th></tr>${rows.map(s=>`<tr><td>${s.id}</td><td>${s.name}</td><td>${s.address||''}</td></tr>`).join('')}</table>`:'<div class="muted">Aucun salon…</div>';}
 
-  // ------------ CRUD PRODUITS ------------
-  async function createProduct(e){ e.preventDefault();
-    const sku=val('prodSku'); const name=val('prodName'); if(!sku||!name) return;
-    const length_inch = intOrNull('prodLen'); const color = val('prodColor')||null; const price = floatOrNull('prodPrice');
-    const r=await fetch(cfg().apiUrl+'/products',{method:'POST',headers:headers(),body:JSON.stringify({sku,name,length_inch,color,price})});
-    if(r.ok){ clear('prodSku','prodName','prodLen','prodColor','prodPrice'); loadProducts(); } else { alert('Erreur ajout produit'); }
-  }
-  async function loadProducts(){
-    const r=await fetch(cfg().apiUrl+'/products',{headers:headers()}); const rows=r.ok?await r.json():[];
-    const opts = rows.map(p=>`<option value="${p.id}">${p.sku} — ${p.name}</option>`).join('');
-    for(const id of ['filterProduct','movProduct']) document.getElementById(id).innerHTML = `<option value="">— Produit —</option>`+opts;
-    document.getElementById('productsList').innerHTML = rows.length
-      ? `<table><tr><th>ID</th><th>SKU</th><th>Nom</th><th>Long.</th><th>Couleur</th><th>Prix</th></tr>${rows.map(p=>`<tr><td>${p.id}</td><td>${p.sku}</td><td>${p.name}</td><td>${p.length_inch||''}</td><td>${p.color||''}</td><td>${p.price ?? ''}</td></tr>`).join('')}</table>`
-      : '<div class="muted">Aucun produit…</div>';
-  }
+async function createProduct(e){e.preventDefault();const sku=document.getElementById('prodSku').value.trim();const name=document.getElementById('prodName').value.trim();if(!sku||!name)return;const l=parseInt(document.getElementById('prodLen').value||'');const c=document.getElementById('prodColor').value||null;const p=parseFloat(document.getElementById('prodPrice').value||'');const r=await fetch(cfg().apiUrl+'/products',{method:'POST',headers:headers(),body:JSON.stringify({sku,name,length_inch:l,color:c,price:p})});if(r.ok){loadProducts();}else alert('Erreur ajout produit');}
+async function loadProducts(){const r=await fetch(cfg().apiUrl+'/products',{headers:headers()});const rows=r.ok?await r.json():[];const opts=rows.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');for(const id of ['filterProduct','movProduct'])document.getElementById(id).innerHTML=`<option value="">— Produit —</option>`+opts;document.getElementById('productsList').innerHTML=rows.length?`<table><tr><th>ID</th><th>Nom</th><th>Prix</th></tr>${rows.map(p=>`<tr><td>${p.id}</td><td>${p.name}</td><td>${p.price||''}</td></tr>`).join('')}</table>`:'<div class="muted">Aucun produit…</div>';}
 
-  // ------------ INVENTAIRE ------------
-  async function loadInventory(){
-    // L’API actuelle retourne tout l’inventaire (pas de filtre serveur) – on filtre côté client si besoin
-    const r=await fetch(cfg().apiUrl+'/inventory',{headers:headers()}); const rows=r.ok?await r.json():[];
-    const salonFilter = document.getElementById('filterSalon').value;
-    const productFilter = document.getElementById('filterProduct').value;
-    const filtered = rows.filter(i => (!salonFilter || i.salon_id==salonFilter) && (!productFilter || i.product_id==productFilter));
-    document.getElementById('inventoryTable').innerHTML = filtered.length
-      ? `<table><tr><th>Salon ID</th><th>Produit ID</th><th>Quantité</th></tr>${filtered.map(i=>`<tr><td>${i.salon_id}</td><td>${i.product_id}</td><td>${i.quantity}</td></tr>`).join('')}</table>`
-      : '<div class="muted">Aucune donnée…</div>';
-  }
+async function loadInventory(){const r=await fetch(cfg().apiUrl+'/inventory',{headers:headers()});const rows=r.ok?await r.json():[];const s=document.getElementById('filterSalon').value;const p=document.getElementById('filterProduct').value;const f=rows.filter(i=>(!s||i.salon_id==s)&&(!p||i.product_id==p));document.getElementById('inventoryTable').innerHTML=f.length?`<table><tr><th>Salon</th><th>Produit</th><th>Quantité</th></tr>${f.map(i=>`<tr><td>${i.salon_id}</td><td>${i.product_id}</td><td>${i.quantity}</td></tr>`).join('')}</table>`:'<div class="muted">Aucune donnée…</div>';}
 
-  // ------------ MOUVEMENTS ------------
-  async function submitMovement(){
-    const type = document.getElementById('movType').value.trim();
-    const salon_id = parseInt(document.getElementById('movSalon').value || '');
-    const product_id = parseInt(document.getElementById('movProduct').value || '');
-    const qty = parseInt(document.getElementById('movQty').value || '');
-    const note = document.getElementById('movNote').value.trim();
-
-    if(!type || !Number.isInteger(salon_id) || !Number.isInteger(product_id) || !Number.isInteger(qty)){
-      setStatus('movStatus','Champs invalides (IDs/qty doivent être des entiers).',false); return;
-    }
-    const url = new URL(cfg().apiUrl + '/movement');
-    url.searchParams.set('type', type);
-    url.searchParams.set('salon_id', salon_id);
-    url.searchParams.set('product_id', product_id);
-    url.searchParams.set('qty', qty);
-    if(note) url.searchParams.set('note', note);
-
-    try{
-      const r = await fetch(url.toString(), { method:'POST', headers: headers() });
-      if(r.ok){ setStatus('movStatus','Mouvement enregistré'); document.getElementById('movQty').value=''; loadInventory(); }
-      else { const t=await r.text(); setStatus('movStatus','Erreur '+r.status+': '+t,false); }
-    }catch(e){ setStatus('movStatus','Impossible de joindre l’API',false); }
-  }
-
-  // ------------ UTILS ------------
-  function val(id){ return document.getElementById(id).value.trim(); }
-  function clear(){ for(const id of arguments){ document.getElementById(id).value=''; } }
-  function intOrNull(id){ const v=parseInt(val(id)||''); return Number.isFinite(v)?v:null; }
-  function floatOrNull(id){ const v=parseFloat(val(id)||''); return Number.isFinite(v)?v:null; }
-
-  async function refreshAll(){ await loadSalons(); await loadProducts(); await loadInventory(); }
-
-  (function init(){
-    // restore cfg
-    const au = localStorage.getItem('apiUrl'); if(au) document.getElementById('apiUrl').value = au;
-    const ak = localStorage.getItem('apiKey'); if(ak) document.getElementById('apiKey').value = ak;
-    const lu = localStorage.getItem('logoUrl'); if(lu){ document.getElementById('logoUrl').value = lu; saveLogo(); }
-    refreshAll();
-  })();
+async function submitMovement(){const t=document.getElementById('movType').value;const s=parseInt(document.getElementById('movSalon').value||'');const p=parseInt(document.getElementById('movProduct').value||'');const q=parseInt(document.getElementById('movQty').value||'');if(!t||!Number.isInteger(s)||!Number.isInteger(p)||!Number.isInteger(q)){setStatus('movStatus','Champs invalides.',false);return;}const url=new URL(cfg().apiUrl+'/movement');url.searchParams.set('type',t);url.searchParams.set('salon_id',s);url.searchParams.set('product_id',p);url.searchParams.set('qty',q);try{const r=await fetch(url,{method:'POST',headers:headers()});if(r.ok){setStatus('movStatus','Mouvement enregistré');loadInventory();}else setStatus('movStatus','Erreur '+r.status,false);}catch(e){setStatus('movStatus','Impossible de joindre l’API',false);}}
+async function refreshAll(){await loadSalons();await loadProducts();await loadInventory();}
+(function init(){refreshAll();})();
 </script>
-  <script>
-  // ===== Luxura defaults (logo + API) =====
-  const LUXURA_DEFAULTS = {
-    api: "https://luxura-inventory-api.onrender.com",
-    logo: "https://static.wixstatic.com/media/de6cdb_1818e78bd1294722811849c73ea77774~mv2.png"
-  };
+</body>
+</html>
 
-  function applyDefaultIfEmpty(id, val, cb){
-    const el = document.getElementById(id);
-    const stored = localStorage.getItem(id === 'apiUrl' ? 'apiUrl' : 'logoUrl');
-    if(!stored){
-      localStorage.setItem(id === 'apiUrl' ? 'apiUrl' : 'logoUrl', val);
-      if(el){ el.value = val; }
-      if(cb) cb(val);
-    }
-  }
-
-  (function luxuraBoot(){
-    applyDefaultIfEmpty('apiUrl', LUXURA_DEFAULTS.api);
-    applyDefaultIfEmpty('logoUrl', LUXURA_DEFAULTS.logo, (v)=>{
-      const slot = document.getElementById('logoSlot');
-      if(slot){ slot.style.backgroundImage=`url(${v})`; slot.style.backgroundSize='cover'; slot.textContent=''; }
-    });
-  })();
-</script>
 
 </body>
 </html>
