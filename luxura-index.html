@@ -285,5 +285,31 @@
     refreshAll();
   })();
 </script>
+  <script>
+  // ===== Luxura defaults (logo + API) =====
+  const LUXURA_DEFAULTS = {
+    api: "https://luxura-inventory-api.onrender.com",
+    logo: "https://static.wixstatic.com/media/de6cdb_1818e78bd1294722811849c73ea77774~mv2.png"
+  };
+
+  function applyDefaultIfEmpty(id, val, cb){
+    const el = document.getElementById(id);
+    const stored = localStorage.getItem(id === 'apiUrl' ? 'apiUrl' : 'logoUrl');
+    if(!stored){
+      localStorage.setItem(id === 'apiUrl' ? 'apiUrl' : 'logoUrl', val);
+      if(el){ el.value = val; }
+      if(cb) cb(val);
+    }
+  }
+
+  (function luxuraBoot(){
+    applyDefaultIfEmpty('apiUrl', LUXURA_DEFAULTS.api);
+    applyDefaultIfEmpty('logoUrl', LUXURA_DEFAULTS.logo, (v)=>{
+      const slot = document.getElementById('logoSlot');
+      if(slot){ slot.style.backgroundImage=`url(${v})`; slot.style.backgroundSize='cover'; slot.textContent=''; }
+    });
+  })();
+</script>
+
 </body>
 </html>
