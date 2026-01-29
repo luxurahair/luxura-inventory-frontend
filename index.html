@@ -61,7 +61,7 @@
           <div class="muted">Interface noire & or • connectée à l’API Render</div>
         </div>
       </div>
-      <div class="muted">v1.2</div>
+      <div class="muted">v1.3</div>
     </div>
 
     <!-- CONFIG -->
@@ -158,10 +158,32 @@
 
 <script>
 /* ============ CFG & HELPERS ============ */
-function cfg(){return{apiUrl:localStorage.getItem('apiUrl')||document.getElementById('apiUrl').value,apiKey:localStorage.getItem('apiKey')||document.getElementById('apiKey').value}}
-function saveCfg(){localStorage.setItem('apiUrl',document.getElementById('apiUrl').value.trim());localStorage.setItem('apiKey',document.getElementById('apiKey').value.trim());}
-function headers(){const h={'Content-Type':'application/json'};const k=cfg().apiKey;if(k)h['x-api-key']=k;return h;}
-function setStatus(id,msg,ok=true){const el=document.getElementById(id);el.textContent=msg;el.className=(ok?'ok':'err')+' muted';}
+function normalizeBaseUrl(u){
+  u = String(u || "").trim();
+  if(!u) return "";
+  return u.endsWith("/") ? u.slice(0, -1) : u; // pas de slash final
+}
+function cfg(){
+  return {
+    apiUrl: normalizeBaseUrl(localStorage.getItem('apiUrl') || document.getElementById('apiUrl').value),
+    apiKey: (localStorage.getItem('apiKey') || document.getElementById('apiKey').value).trim()
+  };
+}
+function saveCfg(){
+  localStorage.setItem('apiUrl', normalizeBaseUrl(document.getElementById('apiUrl').value));
+  localStorage.setItem('apiKey', document.getElementById('apiKey').value.trim());
+}
+function headers(){
+  const h={'Content-Type':'application/json'};
+  const k=cfg().apiKey;
+  if(k) h['x-api-key']=k;
+  return h;
+}
+function setStatus(id,msg,ok=true){
+  const el=document.getElementById(id);
+  el.textContent=msg;
+  el.className=(ok?'ok':'err')+' muted';
+}
 function val(id){return document.getElementById(id).value.trim();}
 function intOrNull(id){const v=parseInt(val(id)||'');return Number.isFinite(v)?v:null;}
 function floatOrNull(id){const v=parseFloat(val(id)||'');return Number.isFinite(v)?v:null;}
@@ -173,18 +195,42 @@ function toast(msg, ok=true){
   const el=document.getElementById('toast');
   el.textContent = msg;
   el.className = 'toast '+(ok?'ok':'err');
-  void el.offsetWidth; // reflow
+  void el.offsetWidth;
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>{ el.classList.remove('show'); }, 2200);
 }
 
+/* Retry helper (cold start Render) */
+async function fetchWithRetry(url, options={}, tries=2, delayMs=1200){
+  let lastErr=null;
+  for(let i=0;i<tries;i++){
+    try{
+      const r = await fetch(url, options);
+      return r;
+    }catch(e){
+      lastErr=e;
+      await new Promise(res=>setTimeout(res, delayMs));
+    }
+  }
+  throw lastErr;
+}
+
 async function testApi(){
   try{
-    const r=await fetch(cfg().apiUrl+'/salons',{headers:headers()});
-    if(r.ok){ setStatus('testStatus','Connexion OK'); toast('Connexion API OK', true); }
-    else { setStatus('testStatus','Erreur '+r.status,false); toast('Erreur API '+r.status, false); }
-  }catch(e){ setStatus('testStatus','Impossible de joindre l’API',false); toast('Impossible de joindre l’API', false); }
+    // ✅ test léger et fiable
+    const r = await fetchWithRetry(cfg().apiUrl + "/health", { headers: headers() }, 2, 1200);
+    if(r.ok){
+      setStatus('testStatus','Connexion OK');
+      toast('Connexion API OK', true);
+    } else {
+      setStatus('testStatus','Erreur '+r.status,false);
+      toast('Erreur API '+r.status, false);
+    }
+  }catch(e){
+    setStatus('testStatus',"Impossible de joindre l’API",false);
+    toast("Impossible de joindre l’API", false);
+  }
   refreshAll();
 }
 
@@ -206,7 +252,6 @@ async function loadSalons(){
     ? `<table><tr><th>ID</th><th>Nom</th><th>Adresse</th></tr>${rows.map(s=>`<tr><td>${s.id}</td><td>${s.name}</td><td>${s.address||''}</td></tr>`).join('')}</table>`
     : '<div class="muted">Aucun salon…</div>';
 
-  // Pré-sélection du salon par défaut
   const qpSalon = parseInt(getParam('salon_id')||'');
   const defaultSalonId = Number.isFinite(qpSalon) ? qpSalon : (rows[0]?.id ?? null);
   if (defaultSalonId){
@@ -237,7 +282,6 @@ async function loadProducts(){
     ? `<table><tr><th>ID</th><th>SKU</th><th>Nom</th><th>Long.</th><th>Couleur</th><th>Prix</th></tr>${rows.map(p=>`<tr><td>${p.id}</td><td>${p.sku}</td><td>${p.name}</td><td>${p.length_inch||''}</td><td>${p.color||''}</td><td>${p.price ?? ''}</td></tr>`).join('')}</table>`
     : '<div class="muted">Aucun produit…</div>';
 
-  // Pré-sélection du produit via URL si fourni
   const qpProd = parseInt(getParam('product_id')||'');
   if (Number.isFinite(qpProd)){
     const fp = document.getElementById('filterProduct');
@@ -304,13 +348,21 @@ async function submitMovement(){
 }
 
 /* ============ BOOT ============ */
-async function refreshAll(){await loadSalons();await loadProducts();await loadInventory();}
+async function refreshAll(){
+  await loadSalons();
+  await loadProducts();
+  await loadInventory();
+}
 (function init(){
-  // Valeurs par défaut (API & Logo) si rien n'est stocké
   const DEFAULT_API="https://luxura-inventory-api.onrender.com";
   const DEFAULT_LOGO="https://static.wixstatic.com/media/de6cdb_1818e78bd1294722811849c73ea77774~mv2.png";
-  if(!localStorage.getItem('apiUrl')){ localStorage.setItem('apiUrl',DEFAULT_API); document.getElementById('apiUrl').value=DEFAULT_API; }
-  if(!localStorage.getItem('logoUrl')){ localStorage.setItem('logoUrl',DEFAULT_LOGO); }
+  if(!localStorage.getItem('apiUrl')){
+    localStorage.setItem('apiUrl', normalizeBaseUrl(DEFAULT_API));
+    document.getElementById('apiUrl').value = DEFAULT_API;
+  } else {
+    document.getElementById('apiUrl').value = localStorage.getItem('apiUrl');
+  }
+  if(!localStorage.getItem('logoUrl')) localStorage.setItem('logoUrl',DEFAULT_LOGO);
   const img=document.getElementById('logoImg'); if(img) img.src = localStorage.getItem('logoUrl') || DEFAULT_LOGO;
 
   refreshAll();
