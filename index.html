@@ -65,10 +65,9 @@
           <div class="muted">Interface noire & or • connectée à l’API Render</div>
         </div>
       </div>
-      <div class="muted">v1.4</div>
+      <div class="muted">v1.5</div>
     </div>
 
-    <!-- CONFIG -->
     <div class="card" style="margin-bottom:16px;">
       <div class="grid">
         <div>
@@ -158,9 +157,6 @@
   <div id="toast" class="toast"></div>
 
 <script>
-/* =========================
-   CONFIG + HEADERS
-========================= */
 function normalizeBaseUrl(u){
   u = String(u || "").trim();
   if(!u) return "";
@@ -177,10 +173,6 @@ function saveCfg(){
   localStorage.setItem('apiKey', document.getElementById('apiKey').value.trim());
 }
 
-/* ✅ IMPORTANT:
-   - GET: pas de Content-Type => évite preflight CORS
-   - POST/PUT: Content-Type JSON
-*/
 function headersGet(){
   const h = { "Accept": "application/json" };
   const k = cfg().apiKey;
@@ -211,84 +203,59 @@ function toast(msg, ok=true){
 function val(id){return document.getElementById(id).value.trim();}
 function intOrNull(id){const v=parseInt(val(id)||'');return Number.isFinite(v)?v:null;}
 function floatOrNull(id){const v=parseFloat(val(id)||'');return Number.isFinite(v)?v:null;}
-function getParam(name){ return new URL(location.href).searchParams.get(name); }
 
-/* =========================
-   FETCH HELPERS (Render sleep)
-========================= */
 async function fetchWithTimeout(url, options={}, timeoutMs=65000){
   const ctrl = new AbortController();
   const t = setTimeout(()=>ctrl.abort(), timeoutMs);
   try{
     return await fetch(url, { ...options, signal: ctrl.signal });
-  } finally {
-    clearTimeout(t);
-  }
-}
-async function fetchWithRetry(url, options={}, tries=2, delayMs=1200){
-  let lastErr=null;
-  for(let i=0;i<tries;i++){
-    try{
-      return await fetchWithTimeout(url, options, 65000);
-    }catch(e){
-      lastErr=e;
-      await new Promise(res=>setTimeout(res, delayMs));
-    }
-  }
-  throw lastErr;
+  } finally { clearTimeout(t); }
 }
 
-/* =========================
-   API TEST
-========================= */
+/* ✅ TEST API: SANS HEADERS -> zéro preflight */
 async function testApi(){
   const base = cfg().apiUrl;
+  const url = base + "/cors/ping";
+  setStatus("testStatus", "Test: " + url);
+
   try{
-    // ✅ endpoint léger: pas de DB, pas de POST
-    const r = await fetchWithRetry(base + "/cors/ping", { method:"GET", headers: headersGet() }, 2, 1200);
+    const r = await fetchWithTimeout(url, { method:"GET" }, 65000);
+
     if(r.ok){
       setStatus('testStatus','Connexion OK', true);
       toast('Connexion API OK', true);
     } else {
-      setStatus('testStatus','Erreur '+r.status, false);
+      const txt = await r.text();
+      setStatus('testStatus','Erreur '+r.status+' : '+txt.slice(0,120), false);
       toast('Erreur API '+r.status, false);
     }
-  }catch(e){
-    setStatus('testStatus',"Impossible de joindre l’API", false);
-    toast("Impossible de joindre l’API", false);
+  } catch(e){
+    const msg = (e && (e.stack || e.message)) ? (e.stack || e.message) : String(e);
+    setStatus('testStatus','FETCH FAIL: '+msg.slice(0,160), false);
+    toast('FETCH FAIL', false);
   }
   refreshAll();
 }
 
-/* =========================
-   CRUD SALONS
-========================= */
 async function createSalon(e){
   e.preventDefault();
   const n = val('salonName');
   const a = val('salonAddr');
   if(!n) return;
 
-  const r = await fetch(cfg().apiUrl + "/salons", {
+  const r = await fetchWithTimeout(cfg().apiUrl + "/salons", {
     method:"POST",
     headers: headersPost(),
     body: JSON.stringify({ name:n, address:a })
   });
 
-  if(r.ok){
-    document.getElementById('salonName').value='';
-    document.getElementById('salonAddr').value='';
-    toast("Salon ajouté", true);
-    loadSalons();
-  }else{
-    toast("Erreur ajout salon ("+r.status+")", false);
-  }
+  if(r.ok){ toast("Salon ajouté", true); loadSalons(); }
+  else { toast("Erreur ajout salon ("+r.status+")", false); }
 }
 
 async function loadSalons(){
-  const r = await fetchWithRetry(cfg().apiUrl + "/salons", { method:"GET", headers: headersGet() }, 2, 500);
+  const r = await fetchWithTimeout(cfg().apiUrl + "/salons", { method:"GET", headers: headersGet() }, 65000);
   const rows = r.ok ? await r.json() : [];
-
   const opts = rows.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   document.getElementById('filterSalon').innerHTML = `<option value="">— Salon —</option>` + opts;
   document.getElementById('movSalon').innerHTML    = `<option value="">— Salon —</option>` + opts;
@@ -300,9 +267,6 @@ async function loadSalons(){
     : `<div class="muted">Aucun salon…</div>`;
 }
 
-/* =========================
-   CRUD PRODUITS
-========================= */
 async function createProduct(e){
   e.preventDefault();
   const sku  = val('prodSku');
@@ -317,25 +281,19 @@ async function createProduct(e){
     price: floatOrNull('prodPrice')
   };
 
-  const r = await fetch(cfg().apiUrl + "/products", {
+  const r = await fetchWithTimeout(cfg().apiUrl + "/products", {
     method:"POST",
     headers: headersPost(),
     body: JSON.stringify(payload)
-  });
+  }, 65000);
 
-  if(r.ok){
-    ['prodSku','prodName','prodLen','prodColor','prodPrice'].forEach(id=>document.getElementById(id).value='');
-    toast("Produit ajouté", true);
-    loadProducts();
-  }else{
-    toast("Erreur ajout produit ("+r.status+")", false);
-  }
+  if(r.ok){ toast("Produit ajouté", true); loadProducts(); }
+  else { toast("Erreur ajout produit ("+r.status+")", false); }
 }
 
 async function loadProducts(){
-  const r = await fetchWithRetry(cfg().apiUrl + "/products", { method:"GET", headers: headersGet() }, 2, 500);
+  const r = await fetchWithTimeout(cfg().apiUrl + "/products", { method:"GET", headers: headersGet() }, 65000);
   const rows = r.ok ? await r.json() : [];
-
   const opts = rows.map(p=>`<option value="${p.id}">${p.sku} — ${p.name}</option>`).join('');
   document.getElementById('filterProduct').innerHTML = `<option value="">— Produit —</option>` + opts;
   document.getElementById('movProduct').innerHTML    = `<option value="">— Produit —</option>` + opts;
@@ -347,11 +305,8 @@ async function loadProducts(){
     : `<div class="muted">Aucun produit…</div>`;
 }
 
-/* =========================
-   INVENTAIRE
-========================= */
 async function loadInventory(){
-  const r = await fetchWithRetry(cfg().apiUrl + "/inventory", { method:"GET", headers: headersGet() }, 2, 500);
+  const r = await fetchWithTimeout(cfg().apiUrl + "/inventory", { method:"GET", headers: headersGet() }, 65000);
   const rows = r.ok ? await r.json() : [];
 
   const s = document.getElementById('filterSalon').value;
@@ -365,9 +320,6 @@ async function loadInventory(){
     : `<div class="muted">Aucune donnée…</div>`;
 }
 
-/* =========================
-   MOUVEMENTS
-========================= */
 function quickType(t){
   document.getElementById('movType').value = t;
   const qty = document.getElementById('movQty');
@@ -375,13 +327,6 @@ function quickType(t){
   setStatus('movStatus','Type sélectionné : '+t,true);
   toast('Type : '+t,true);
 }
-
-document.addEventListener('keydown',(e)=>{
-  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
-  const map={i:'IN',o:'OUT',s:'SALE',a:'ADJUST'};
-  const t=map[e.key?.toLowerCase()];
-  if(t){ e.preventDefault(); quickType(t); }
-});
 
 async function submitMovement(){
   const type = document.getElementById('movType').value.trim();
@@ -403,27 +348,11 @@ async function submitMovement(){
   url.searchParams.set('qty',qty);
   if(note) url.searchParams.set('note',note);
 
-  try{
-    const r = await fetchWithTimeout(url.toString(), { method:"POST", headers: headersPost() }, 65000);
-    if(r.ok){
-      document.getElementById('movQty').value='';
-      setStatus('movStatus','Mouvement enregistré',true);
-      toast('Mouvement enregistré',true);
-      loadInventory();
-    } else {
-      const txt = await r.text();
-      setStatus('movStatus','Erreur '+r.status+': '+txt,false);
-      toast('Erreur '+r.status,false);
-    }
-  }catch(e){
-    setStatus('movStatus',"Impossible de joindre l’API",false);
-    toast("Impossible de joindre l’API",false);
-  }
+  const r = await fetchWithTimeout(url.toString(), { method:"POST", headers: headersPost() }, 65000);
+  if(r.ok){ toast('Mouvement enregistré', true); loadInventory(); }
+  else { toast('Erreur '+r.status, false); }
 }
 
-/* =========================
-   INIT
-========================= */
 async function refreshAll(){
   await loadSalons();
   await loadProducts();
