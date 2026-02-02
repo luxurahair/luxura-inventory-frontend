@@ -216,26 +216,28 @@ async function fetchWithTimeout(url, options={}, timeoutMs=65000){
 async function testApi(){
   const base = cfg().apiUrl;
   const url = base + "/cors/ping";
-  setStatus("testStatus", "Test: " + url);
+
+  setStatus("testStatus", "Test: " + url, true);
 
   try{
     const r = await fetchWithTimeout(url, { method:"GET" }, 65000);
+    const txt = await r.text();
 
-    if(r.ok){
-      setStatus('testStatus','Connexion OK', true);
-      toast('Connexion API OK', true);
-    } else {
-      const txt = await r.text();
-      setStatus('testStatus','Erreur '+r.status+' : '+txt.slice(0,120), false);
-      toast('Erreur API '+r.status, false);
-    }
+    setStatus(
+      "testStatus",
+      (r.ok ? "✅ " : "❌ ") + "HTTP " + r.status + " | " + txt.slice(0,120),
+      r.ok
+    );
+
+    toast(r.ok ? "Connexion API OK" : "Erreur API " + r.status, r.ok);
+
   } catch(e){
     const msg = (e && (e.stack || e.message)) ? (e.stack || e.message) : String(e);
-    setStatus('testStatus','FETCH FAIL: '+msg.slice(0,160), false);
-    toast('FETCH FAIL', false);
+    setStatus("testStatus", "❌ FETCH FAIL: " + msg.slice(0,160), false);
+    toast("FETCH FAIL", false);
   }
-  refreshAll();
 }
+
 
 async function createSalon(e){
   e.preventDefault();
